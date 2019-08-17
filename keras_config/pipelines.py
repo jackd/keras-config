@@ -20,6 +20,7 @@ class Pipeline(Configurable):
                  batch_size=None,
                  repeats=NO_REPEAT,
                  shuffle_buffer=None,
+                 drop_remainder=False,
                  map_fn=None,
                  prefetch_buffer=AUTOTUNE,
                  num_parallel_calls=AUTOTUNE,
@@ -31,6 +32,7 @@ class Pipeline(Configurable):
         self.batch_size = batch_size
         self.repeats = repeats
         self.shuffle_buffer = shuffle_buffer
+        self.drop_remainder = drop_remainder
         self.prefetch_buffer = prefetch_buffer
         self.num_parallel_calls = num_parallel_calls
         self.map_fn = functions.get(map_fn)
@@ -59,7 +61,8 @@ class Pipeline(Configurable):
         if self.map_fn is not None:
             dataset = dataset.map(self.map_fn, self.num_parallel_calls)
         if self.batch_size is not None:
-            dataset = dataset.batch(self.batch_size)
+            dataset = dataset.batch(self.batch_size,
+                                    drop_remainder=self.drop_remainder)
         if self.prefetch_buffer:
             dataset = dataset.prefetch(self.prefetch_buffer)
         return dataset
@@ -81,7 +84,8 @@ class Pipeline(Configurable):
                     prefetch_buffer=self.prefetch_buffer,
                     num_parallel_calls=self.num_parallel_calls,
                     output_spec=get_input_spec_config(self.output_spec),
-                    output_spec_fn=functions.serialize(self.output_spec_fn))
+                    output_spec_fn=functions.serialize(self.output_spec_fn),
+                    drop_remainder=self.drop_remainder)
 
 
 pipelines = registry.Registry('pipelines',
